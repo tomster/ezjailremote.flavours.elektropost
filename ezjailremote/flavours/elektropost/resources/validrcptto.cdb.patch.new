@@ -1,0 +1,153 @@
+--- Makefile.old	Mon Dec  4 03:33:09 2006
++++ Makefile	Mon Dec  4 03:35:01 2006
+@@ -1558,15 +1558,15 @@
+ 
+ qmail-smtpd: \
+ load qmail-smtpd.o rcpthosts.o commands.o timeoutread.o \
+-timeoutwrite.o ip.o ipme.o ipalloc.o strsalloc.o control.o constmap.o \
++timeoutwrite.o ip.o ipme.o ipalloc.o subfderr.o strsalloc.o control.o constmap.o \
+ received.o date822fmt.o now.o qmail.o spf.o dns.o cdb.a fd.a wait.a \
+-datetime.a getln.a open.a sig.a case.a env.a stralloc.a alloc.a substdio.a \
++datetime.a getln.a open.a sig.a case.a env.a strerr.a stralloc.a alloc.a substdio.a \
+ error.a str.a fs.a auto_qmail.o base64.o socket.lib dns.lib
+ 	./load qmail-smtpd rcpthosts.o commands.o timeoutread.o \
+-	timeoutwrite.o ip.o ipme.o ipalloc.o strsalloc.o control.o \
++	timeoutwrite.o ip.o ipme.o ipalloc.o subfderr.o strsalloc.o control.o \
+ 	tls.o ssl_timeoutio.o ndelay.a -L/usr/lib -lssl -lcrypto \
+ 	constmap.o received.o date822fmt.o now.o qmail.o spf.o dns.o cdb.a \
+-	fd.a wait.a datetime.a getln.a open.a sig.a case.a env.a stralloc.a \
++	fd.a wait.a datetime.a getln.a open.a sig.a case.a env.a strerr.a stralloc.a \
+ 	alloc.a substdio.a error.a fs.a auto_qmail.o base64.o \
+ 	str.a `cat socket.lib` `cat dns.lib`
+ 
+@@ -1579,7 +1579,7 @@
+ substdio.h alloc.h auto_qmail.h control.h received.h constmap.h \
+ error.h ipme.h ip.h ipalloc.h strsalloc.h ip.h gen_alloc.h ip.h qmail.h \
+ substdio.h str.h fmt.h scan.h byte.h case.h env.h now.h datetime.h \
+-exit.h rcpthosts.h timeoutread.h timeoutwrite.h commands.h wait.h spf.h \
++exit.h rcpthosts.h timeoutread.h timeoutwrite.h commands.h wait.h spf.h cdb.h uint32.h \
+ fd.h base64.h
+ 	./compile qmail-smtpd.c
+ 
+--- qmail-smtpd.c.old	Mon Dec  4 03:36:22 2006
++++ qmail-smtpd.c	Mon Dec  4 03:44:49 2006
+@@ -26,6 +26,8 @@
+ #include "wait.h"
+ #include "fd.h"
+ #include "spf.h"
++#include "strerr.h"
++#include "cdb.h"
+ 
+ #define AUTHCRAM
+ #define MAXHOPS 100
+@@ -99,6 +101,7 @@
+ int err_noauth() { out("504 auth type unimplemented (#5.5.1)\r\n"); return -1; }
+ int err_authabrt() { out("501 auth exchange cancelled (#5.0.0)\r\n"); return -1; }
+ int err_input() { out("501 malformed auth input (#5.5.4)\r\n"); return -1; }
++void err_vrt() { out("553 sorry, this recipient is not in my validrcptto list (#5.7.1)\r\n"); }
+ 
+ stralloc greeting = {0};
+ stralloc spflocal = {0};
+@@ -139,6 +142,7 @@
+ int bmfok = 0;
+ stralloc bmf = {0};
+ struct constmap mapbmf;
++int vrtfd = -1;
+ 
+ void setup()
+ {
+@@ -155,6 +159,9 @@
+ 
+   if (rcpthosts_init() == -1) die_control();
+ 
++  vrtfd = open_read("control/validrcptto.cdb");
++  if (-1 == vrtfd) if (errno != error_noent) die_control();
++
+   bmfok = control_readfile(&bmf,"control/badmailfrom",0);
+   if (bmfok == -1) die_control();
+   if (bmfok)
+@@ -269,6 +276,60 @@
+   return 0;
+ }
+ 
++int vrtcheck()
++{
++  int j,k,r;
++  uint32 dlen;
++  stralloc laddr = {0};
++
++  stralloc user = {0};
++  stralloc adom = {0};
++  stralloc utry = {0};
++
++  if (-1 == vrtfd) return 1;
++
++  /* lowercase whatever we were sent */
++  if (!stralloc_copy(&laddr,&addr)) die_nomem() ;
++  case_lowerb(laddr.s,laddr.len);
++
++  /* exact match? */
++  r = cdb_seek(vrtfd,laddr.s,laddr.len-1,&dlen) ;
++  if (r>0) return r;
++
++  j = byte_rchr(laddr.s,laddr.len,'@');
++  if (j < laddr.len)
++  {
++    /* start "-default" search loop */
++    stralloc_copyb(&user,laddr.s,j) ;
++    stralloc_copyb(&adom,laddr.s+j,laddr.len-j-1);
++
++    while(1)
++    {
++      k = byte_rchr(user.s,user.len,'-');
++      if (k >= user.len) break ;
++
++      user.len = k+1;
++      stralloc_cats(&user,"default");
++
++      stralloc_copy(&utry,&user);
++      stralloc_cat (&utry,&adom);
++      stralloc_0(&utry);
++
++      r = cdb_seek(vrtfd,utry.s,utry.len-1,&dlen);
++      if (r>0) return r;
++
++      user.len = k ;
++    }
++
++    /* try "@domain" */
++    r = cdb_seek(vrtfd,laddr.s+j,laddr.len-j-1,&dlen) ;
++    if (r>0) return r;
++  }
++
++  return 0;
++}
++
++
+ int addrallowed()
+ {
+   int r;
+@@ -280,7 +341,6 @@
+   return r;
+ }
+ 
+-
+ int seenmail = 0;
+ int flagbarf; /* defined if seenmail */
+ int flagbarfspf;
+@@ -402,8 +462,14 @@
+     if (!stralloc_cats(&addr,relayclient)) die_nomem();
+     if (!stralloc_0(&addr)) die_nomem();
+   }
+-  else
++  else {
+     if (!addrallowed()) { err_nogateway(); return; }
++    if (!vrtcheck()) {
++      strerr_warn4("qmail-smtpd: not in validrcptto: ",addr.s,
++                   " at ",remoteip,0);
++      err_vrt(); return;
++    }
++  }
+   if (!stralloc_cats(&rcptto,"T")) die_nomem();
+   if (!stralloc_cats(&rcptto,addr.s)) die_nomem();
+   if (!stralloc_0(&rcptto)) die_nomem();

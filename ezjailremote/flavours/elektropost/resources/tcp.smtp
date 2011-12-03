@@ -1,0 +1,14 @@
+# Das hier sind die rulez fuer den tcpserver (ucspi) der den qmail-smtpd startet
+# als relay fungiert <host> nur fuer localhost und <insert-local-nets here>.
+# Alle anderen duerfen zwar senden, aber nur an domains, die in
+# /var/qmail/control/rcpthosts stehen.
+#
+# Diese Datei muss mittels
+#
+# "cat /usr/local/vpopmail/etc/tcp.smtp | tcprules /usr/local/vpopmail/etc/tcp.smtp.cdb /usr/local/vpopmail/etc/tcp.smtp.tmp"
+#
+# "kompiliert" werden.
+# 
+:allow
+#127.0.0.1:allow,RELAYCLIENT=""
+#192.168.0.1:allow,RELAYCLIENT=""

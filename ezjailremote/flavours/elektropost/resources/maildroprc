@@ -1,0 +1,21 @@
+import EXT
+import HOST
+
+#This just bloody won't work for me.. don't know why
+VHOME=`/usr/local/vpopmail/bin/vuserinfo -d $EXT@$HOST`
+#VHOME=/usr/local/vpopmail/domains/$HOST/$EXT
+
+if (/^X-Spam-Flag: *YES/) 
+{ 
+    exception { 
+        TMP=`if [ ! -d $VHOME/Maildir/.Junk ]; then /usr/local/bin/maildirmake -f Junk $VHOME/Maildir/; fi`
+        TMP=`if ! grep -q ^Junk$ $VHOME/Maildir/.subscriptions; then echo Junk >> $VHOME/Maildir/.subscriptions; fi`
+        to "$VHOME/Maildir/.Junk/" 
+    } 
+} 
+else 
+{ 
+    exception { 
+        to "$VHOME/Maildir/" 
+    } 
+}

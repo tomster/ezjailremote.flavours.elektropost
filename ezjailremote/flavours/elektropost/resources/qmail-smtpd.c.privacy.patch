@@ -1,0 +1,31 @@
+--- qmail-smtpd.c	2009-07-21 23:32:27.000000000 +0200
++++ qmail-smtpd.c	2009-07-21 23:30:48.000000000 +0200
+@@ -34,7 +34,7 @@
+ unsigned int databytes = 0;
+ int timeout = 1200;
+ unsigned int spfbehavior = 0;
+-
++static int authd = 0;
+ const char *protocol = "SMTP";
+ 
+ #ifdef TLS
+@@ -614,7 +614,10 @@
+   qp = qmail_qp(&qqt);
+   out("354 go ahead\r\n");
+  
+-  received(&qqt,protocol,local,remoteip,remotehost,remoteinfo,fakehelo);
++  if(!authd)
++    received(&qqt,protocol,local,remoteip,remotehost,remoteinfo,fakehelo);
++  else
++    received(&qqt,protocol,local,remoteinfo,local,0,local);
+   spfreceived();
+   blast(&hops);
+   hops = (hops >= MAXHOPS);
+@@ -839,7 +842,6 @@
+ char **childargs;
+ substdio ssup;
+ char upbuf[128];
+-int authd = 0;
+ 
+ int authgetl(void) {
+   int i;
