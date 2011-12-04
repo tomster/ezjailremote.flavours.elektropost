@@ -34,6 +34,12 @@ def setup(hostname, cert_file=None, key_file=None):
         sudo("make install")
     sudo('echo "QMAIL_SLAVEPORT=tls" >> /etc/make.conf')
 
+    # Configure qmail
+    sudo('ln -s /var/qmail/boot/qmail-smtpd.rcNG /usr/local/etc/rc.d/qmail-smtpd')
+    sudo('ln -s /var/qmail/boot/maildir /usr/local/etc/rc.d/qmail')
+    sudo('''echo 'qmailsmtpd_enable="YES"' >> /etc/rc.conf''')
+    sudo('''echo 'qmailsmtpd_checkpassword="/usr/local/vpopmail/bin/vchkpw"' >> /etc/rc.conf''')
+
 
 def create_self_signed_cert(hostname, cert_file, key_file):
     """ based on http://skippylovesmalorie.wordpress.com/2010/02/12/how-to-generate-a-self-signed-certificate-using-pyopenssl/
