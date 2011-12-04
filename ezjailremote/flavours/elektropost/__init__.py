@@ -78,12 +78,13 @@ def setup(hostname, host_ip=None, pem_file=None):
     sudo('''echo 'dovecot_enable="YES"' >> /etc/rc.conf''')
 
     # Configure dovecot
-    upload_template(path.join(local_resource_dir, 'dovecot.conf'
+    upload_template(path.join(local_resource_dir, 'dovecot.conf'),
         '/usr/local/etc/dovecot.conf',
         context=dict(
             hostname=hostname,
             dovecot_ip=host_ip),
-        backup=False))
+        backup=False,
+        use_sudo=True)
 
     # Install lighty
     with cd("/usr/ports/www/lighthttpd"):
