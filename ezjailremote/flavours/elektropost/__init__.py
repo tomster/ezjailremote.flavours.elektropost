@@ -15,18 +15,17 @@ def setup(hostname, cert_file=None, key_file=None):
     puts("running elektropost setup")
     from ezjailremote.flavours import elektropost
     local_resource_dir = path.join(path.abspath(path.dirname(elektropost.__file__)), 'resources')
+    remote_resource_dir = "/tmp/ezjailremote.flavours.elektropost/"
+    sudo("mkdir -p %s" % remote_resource_dir)
+    put(local_resource_dir, remote_resource_dir, use_sudo=True)
+    remote_resource_dir += 'resources'
+
+    # Install qmail
     sudo("mkdir -p /var/db/ports/qmail-tls")
-    put(path.join(local_resource_dir, 'qmail-tls-options'),
-        '/var/db/ports/qmail-tls/options', use_sudo=True)
+    sudo("mv %s/qmail-tls-options /var/db/ports/qmail-tls/options" % remote_resource_dir)
     with cd("/usr/ports/mail/qmail-tls/"):
         sudo("make patch")
 
-    remote_resource_dir = "/tmp/ezjailremote.flavours.elektropost"
-    sudo("mkdir -p %s" % remote_resource_dir)
-    put(path.join(local_resource_dir, 'validrcptto.cdb.patch.new'),
-        path.join(remote_resource_dir, 'validrcptto.cdb.patch.new'), use_sudo=True)
-    put(path.join(local_resource_dir, 'qmail-smtpd.c.privacy.patch'),
-        path.join(remote_resource_dir, 'qmail-smtpd.c.privacy.patch'), use_sudo=True)
     with cd("/var/ports/basejail/usr/ports/mail/qmail-tls/work/qmail-1.03"):
         sudo("patch < %s" % path.join(remote_resource_dir, 'validrcptto.cdb.patch.new'))
         sudo("patch < %s" % path.join(remote_resource_dir, 'qmail-smtpd.c.privacy.patch'))
