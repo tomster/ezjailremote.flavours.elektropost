@@ -5,10 +5,12 @@ from OpenSSL import crypto
 
 
 @task
-def setup(*args, **kw):
-    """ This method is called immediately after starting up the jail.
-    Any additional keyword arguments passed to the create command from the command
-    line are available here in kw
+def setup(hostname, cert_file=None, key_file=None):
+    """ Sets up a fully functional mail server according to the elektropost
+        instructions at http://erdgeist.org/arts/software/elektropost/
+
+        hostname: FQDN of the mail host, required
+        cert_file, key_file: paths to .pem key and certfiles, will be used for IMAP and webmail
     """
     puts("running elektropost setup")
     from ezjailremote.flavours import elektropost
