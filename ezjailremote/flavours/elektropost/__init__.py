@@ -1,3 +1,4 @@
+import sys
 from os import path
 
 from fabric.api import sudo, task, put, puts, cd
@@ -5,7 +6,7 @@ from OpenSSL import crypto
 
 
 @task
-def setup(hostname, cert_file=None, key_file=None):
+def setup(hostname, pem_file=None):
     """ Sets up a fully functional mail server according to the elektropost
         instructions at http://erdgeist.org/arts/software/elektropost/
 
@@ -25,6 +26,16 @@ def setup(hostname, cert_file=None, key_file=None):
     put(path.join(local_resource_dir, 'server_root/var/db/ports/*'),
         "/var/db/ports/",
         use_sudo=True)
+
+
+    # Upload cert
+    if pem_file is None:
+        pem_file = path.join(local_resource_dir, 'servercert.pem')
+        create_self_signed_cert(hostname, pem_file)
+    elif not path.exists(pem_file):
+        sys.exit("No such .pem '%s'" % pem_file)
+    sudo("mkdir -p /var/qmail/control/")
+    put(pem_file, "/var/qmail/control/servercert.pem", use_sudo=True)
 
     # Install qmail
     with cd("/usr/ports/mail/qmail-tls/"):
