@@ -85,6 +85,28 @@ def setup(hostname, host_ip=None, pem_file=None):
             dovecot_ip=host_ip),
         backup=False))
 
+    # Install lighty
+    with cd("/usr/ports/www/lighthttpd"):
+        sudo("make install")
+    sudo('''echo 'lighttpd_enable="YES"' >> /etc/rc.conf''')
+
+    # Configure lighty
+
+    # Install squirrelmail
+    with cd("/usr/ports/mail/squirrelmail"):
+        sudo("make install")
+
+    # Install qmailadmin plugin for squirrelmail
+    with cd("/usr/ports/mail/squirrelmail-qmailadmin_login-plugin"):
+        sudo("make install")
+
+    # Install maildrop
+    with cd("/usr/ports/mail/maildrop"):
+        sudo("make install")
+
+    # Install the maildrop spam sort magic
+    sudo("mv %s /usr/local/etc/maildroprc" % path.join(remote_patches_dir, 'maildroprc'))
+
 
 def create_self_signed_cert(hostname, pem_file):
     """ based on http://skippylovesmalorie.wordpress.com/2010/02/12/how-to-generate-a-self-signed-certificate-using-pyopenssl/
