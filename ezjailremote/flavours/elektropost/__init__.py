@@ -1,6 +1,7 @@
 from os import path
 
 from fabric.api import sudo, task, put, puts, cd
+from OpenSSL import crypto
 
 
 @task
@@ -31,3 +32,26 @@ def setup(*args, **kw):
     with cd("/usr/ports/mail/qmail-tls/"):
         sudo("make install")
     sudo('echo "QMAIL_SLAVEPORT=tls" >> /etc/make.conf')
+
+
+def create_self_signed_cert(hostname, cert_file, key_file):
+    """ based on http://skippylovesmalorie.wordpress.com/2010/02/12/how-to-generate-a-self-signed-certificate-using-pyopenssl/
+    """
+    # create a key pair
+    pkey = crypto.PKey()
+    pkey.generate_key(crypto.TYPE_RSA, 1024)
+
+    # create a minimal self-signed cert
+    cert = crypto.X509()
+    cert.get_subject().CN = hostname
+    cert.set_serial_number(1000)
+    cert.gmtime_adj_notBefore(0)
+    cert.gmtime_adj_notAfter(365 * 24 * 60 * 60)
+    cert.set_issuer(cert.get_subject())
+    cert.set_pubkey(pkey)
+    cert.sign(pkey, 'sha1')
+
+    open(cert_file, "wt").write(
+        crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+    open(key_file, "wt").write(
+        crypto.dump_privatekey(crypto.FILETYPE_PEM, pkey))

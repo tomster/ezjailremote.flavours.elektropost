@@ -25,7 +25,8 @@ setup(name='ezjailremote.flavours.elektropost',
           'setuptools',
           # -*- Extra requirements: -*-
           'ezjailremote',
-      ],
+          'pyopenssl',
+     ],
       entry_points="""
       # -*- Entry points: -*-
       """,
