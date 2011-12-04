@@ -22,7 +22,7 @@ def setup(hostname, cert_file=None, key_file=None):
     remote_patches_dir += 'patches'
     # upload ports options
     sudo("mkdir -p /var/db/ports/")
-    put(path.join(local_resource_dir, 'var/db/ports/*'),
+    put(path.join(local_resource_dir, 'server_root/var/db/ports/*'),
         "/var/db/ports/",
         use_sudo=True)
 
