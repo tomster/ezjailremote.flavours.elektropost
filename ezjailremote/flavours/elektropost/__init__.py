@@ -1,16 +1,20 @@
 import sys
 from os import path
 
-from fabric.api import sudo, task, put, puts, cd
+from fabric.api import sudo, task, put, puts, cd, env, warn
+from fabric.contrib.files import upload_template
 from OpenSSL import crypto
+
+from ezjailremote.utils import is_ip
 
 
 @task
-def setup(hostname, pem_file=None):
+def setup(hostname, host_ip=None, pem_file=None):
     """ Sets up a fully functional mail server according to the elektropost
         instructions at http://erdgeist.org/arts/software/elektropost/
 
         hostname: FQDN of the mail host, required
+        host_ip: IP address of the host, required, if env.host is not an ip address
         cert_file, key_file: paths to .pem key and certfiles, will be used for IMAP and webmail
     """
     puts("running elektropost setup")
@@ -27,6 +31,11 @@ def setup(hostname, pem_file=None):
         "/var/db/ports/",
         use_sudo=True)
 
+    if host_ip is None and is_ip.match(env['host']):
+        host_ip = env['host']
+    if host_ip is None:
+        warn("No primary IP address specified! Either call using an ip address as "
+            "host or explicitly pass one via host_ip")
 
     # Upload cert
     if pem_file is None:
@@ -67,6 +76,14 @@ def setup(hostname, pem_file=None):
     with cd("/usr/ports/mail/dovecot"):
         sudo("make install")
     sudo('''echo 'dovecot_enable="YES"' >> /etc/rc.conf''')
+
+    # Configure dovecot
+    upload_template(path.join(local_resource_dir, 'dovecot.conf'
+        '/usr/local/etc/dovecot.conf',
+        context=dict(
+            hostname=hostname,
+            dovecot_ip=host_ip),
+        backup=False))
 
 
 def create_self_signed_cert(hostname, pem_file):
