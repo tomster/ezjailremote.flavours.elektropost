@@ -40,6 +40,21 @@ def setup(hostname, cert_file=None, key_file=None):
     sudo('''echo 'qmailsmtpd_enable="YES"' >> /etc/rc.conf''')
     sudo('''echo 'qmailsmtpd_checkpassword="/usr/local/vpopmail/bin/vchkpw"' >> /etc/rc.conf''')
 
+    # Install vpopmail
+    # TODO set options
+    with cd("/usr/ports/mail/vpopmail"):
+        sudo("make install")
+    sudo("chown vpopmail:vchkpw /usr/local/vpopmail")
+    sudo("chmod u+s ~vpopmail/bin/vchkpw")
+    sudo("pw user mod vpopmail -s /bin/sh")
+    sudo("echo %s > /usr/local/vpopmail/etc/defaultdomain" % hostname)
+
+    # Install dovecot
+    # TODO set options
+    with cd("/usr/ports/mail/dovecot"):
+        sudo("make install")
+    sudo('''echo 'dovecot_enable="YES"' >> /etc/rc.conf''')
+
 
 def create_self_signed_cert(hostname, cert_file, key_file):
     """ based on http://skippylovesmalorie.wordpress.com/2010/02/12/how-to-generate-a-self-signed-certificate-using-pyopenssl/
