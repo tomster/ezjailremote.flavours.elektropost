@@ -13,22 +13,26 @@ def setup(hostname, cert_file=None, key_file=None):
         cert_file, key_file: paths to .pem key and certfiles, will be used for IMAP and webmail
     """
     puts("running elektropost setup")
+    # upload patches
     from ezjailremote.flavours import elektropost
-    local_resource_dir = path.join(path.abspath(path.dirname(elektropost.__file__)), 'resources')
-    remote_resource_dir = "/tmp/ezjailremote.flavours.elektropost/"
-    sudo("mkdir -p %s" % remote_resource_dir)
-    put(local_resource_dir, remote_resource_dir, use_sudo=True)
-    remote_resource_dir += 'resources'
+    local_resource_dir = path.join(path.abspath(path.dirname(elektropost.__file__)))
+    remote_patches_dir = "/tmp/ezjailremote.flavours.elektropost/"
+    sudo("mkdir -p %s" % remote_patches_dir)
+    put(path.join(local_resource_dir, 'patches'), remote_patches_dir, use_sudo=True)
+    remote_patches_dir += 'patches'
+    # upload ports options
+    sudo("mkdir -p /var/db/ports/")
+    put(path.join(local_resource_dir, 'var/db/ports/*'),
+        "/var/db/ports/",
+        use_sudo=True)
 
     # Install qmail
-    sudo("mkdir -p /var/db/ports/qmail-tls")
-    sudo("mv %s/qmail-tls-options /var/db/ports/qmail-tls/options" % remote_resource_dir)
     with cd("/usr/ports/mail/qmail-tls/"):
         sudo("make patch")
 
     with cd("/var/ports/basejail/usr/ports/mail/qmail-tls/work/qmail-1.03"):
-        sudo("patch < %s" % path.join(remote_resource_dir, 'validrcptto.cdb.patch.new'))
-        sudo("patch < %s" % path.join(remote_resource_dir, 'qmail-smtpd.c.privacy.patch'))
+        sudo("patch < %s" % path.join(remote_patches_dir, 'validrcptto.cdb.patch.new'))
+        sudo("patch < %s" % path.join(remote_patches_dir, 'qmail-smtpd.c.privacy.patch'))
 
     with cd("/usr/ports/mail/qmail-tls/"):
         sudo("make install")
@@ -41,7 +45,6 @@ def setup(hostname, cert_file=None, key_file=None):
     sudo('''echo 'qmailsmtpd_checkpassword="/usr/local/vpopmail/bin/vchkpw"' >> /etc/rc.conf''')
 
     # Install vpopmail
-    # TODO set options
     with cd("/usr/ports/mail/vpopmail"):
         sudo("make install")
     sudo("chown vpopmail:vchkpw /usr/local/vpopmail")
@@ -50,7 +53,6 @@ def setup(hostname, cert_file=None, key_file=None):
     sudo("echo %s > /usr/local/vpopmail/etc/defaultdomain" % hostname)
 
     # Install dovecot
-    # TODO set options
     with cd("/usr/ports/mail/dovecot"):
         sudo("make install")
     sudo('''echo 'dovecot_enable="YES"' >> /etc/rc.conf''')
