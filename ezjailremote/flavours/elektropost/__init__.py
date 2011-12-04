@@ -58,7 +58,7 @@ def setup(hostname, cert_file=None, key_file=None):
     sudo('''echo 'dovecot_enable="YES"' >> /etc/rc.conf''')
 
 
-def create_self_signed_cert(hostname, cert_file, key_file):
+def create_self_signed_cert(hostname, pem_file):
     """ based on http://skippylovesmalorie.wordpress.com/2010/02/12/how-to-generate-a-self-signed-certificate-using-pyopenssl/
     """
     # create a key pair
@@ -75,7 +75,6 @@ def create_self_signed_cert(hostname, cert_file, key_file):
     cert.set_pubkey(pkey)
     cert.sign(pkey, 'sha1')
 
-    open(cert_file, "wt").write(
+    open(pem_file, "wt").write(
+        crypto.dump_privatekey(crypto.FILETYPE_PEM, pkey) +
         crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-    open(key_file, "wt").write(
-        crypto.dump_privatekey(crypto.FILETYPE_PEM, pkey))
