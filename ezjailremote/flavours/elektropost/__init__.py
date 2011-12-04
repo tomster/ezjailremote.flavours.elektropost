@@ -13,9 +13,14 @@ def setup(hostname, host_ip=None, pem_file=None):
     """ Sets up a fully functional mail server according to the elektropost
         instructions at http://erdgeist.org/arts/software/elektropost/
 
+        Parameters:
+
         hostname: FQDN of the mail host, required
+
         host_ip: IP address of the host, required, if env.host is not an ip address
-        cert_file, key_file: paths to .pem key and certfiles, will be used for IMAP and webmail
+
+        pem_file: path to .pem file, will be used for IMAP and webmail, auto-generated,
+            if none is  given
     """
     puts("running elektropost setup")
     # upload patches
