@@ -78,6 +78,7 @@ def setup(hostname, host_ip=None, pem_file=None):
     sudo("chown vpopmail:vchkpw /usr/local/vpopmail")
     sudo("chmod u+s ~vpopmail/bin/vchkpw")
     sudo("pw user mod vpopmail -s /bin/sh")
+    # Configure vpopmail
     sudo("echo %s > /usr/local/vpopmail/etc/defaultdomain" % hostname)
 
     # Install dovecot
@@ -100,6 +101,23 @@ def setup(hostname, host_ip=None, pem_file=None):
     sudo('''echo 'lighttpd_enable="YES"' >> /etc/rc.conf''')
 
     # Configure lighty
+    upload_template(path.join(local_resource_dir, 'lighttpd.conf'),
+        '/usr/local/etc/lighttpd.conf',
+        context=dict(
+            hostname=hostname,
+            httpd_ip=host_ip),
+        backup=False,
+        use_sudo=True)
+    sudo("mkdir -p /usr/local/www/data")
+    put(path.join(local_resource_dir, 'data/*.*'),
+        "/usr/local/www/data/", use_sudo=True)
+    upload_template(path.join(local_resource_dir, 'data/index.html'),
+        '/usr/local/www/data/index.html',
+        context=dict(
+            hostname=hostname,
+            httpd_ip=host_ip),
+        backup=False,
+        use_sudo=True)
 
     # Install squirrelmail
     with cd("/usr/ports/mail/squirrelmail"):
