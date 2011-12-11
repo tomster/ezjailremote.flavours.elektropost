@@ -64,10 +64,13 @@ def setup(hostname, host_ip=None, pem_file=None):
     sudo('echo "QMAIL_SLAVEPORT=tls" >> /etc/make.conf')
 
     # Configure qmail
+    sudo("echo %s > /var/qmail/control/me" % hostname)
     sudo('ln -s /var/qmail/boot/qmail-smtpd.rcNG /usr/local/etc/rc.d/qmail-smtpd')
     sudo('ln -s /var/qmail/boot/maildir /usr/local/etc/rc.d/qmail')
     sudo('''echo 'qmailsmtpd_enable="YES"' >> /etc/rc.conf''')
     sudo('''echo 'qmailsmtpd_checkpassword="/usr/local/vpopmail/bin/vchkpw"' >> /etc/rc.conf''')
+    sudo('cp %s/tcp.smtp /etc/' % remote_patches_dir)
+    sudo('tcprules /etc/tcp.smtp.cdb /etc/tcp.smtp.tmp < /etc/tcp.smtp')
 
     # Install vpopmail
     with cd("/usr/ports/mail/vpopmail"):
