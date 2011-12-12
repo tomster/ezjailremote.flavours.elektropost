@@ -6,7 +6,16 @@ setup(name='ezjailremote.flavours.elektropost',
       version=version,
       description="ezjail-remote flavour that installs the elektropost"
         "stack (http://erdgeist.org/arts/software/elektropost/)",
-      long_description=open("README.txt").read(),
+      long_description=(
+          open('README.rst').read()
+          + '\n' +
+          'Change history\n'
+          '==============\n'
+          + '\n' +
+          open('HISTORY.rst').read()
+          + '\n' +
+          'Download\n'
+          '========\n'),
       # Get more strings from
       # http://pypi.python.org/pypi?:action=list_classifiers
       classifiers=[
