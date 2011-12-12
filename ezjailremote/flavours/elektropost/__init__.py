@@ -99,10 +99,17 @@ def setup(hostname, host_ip=None, pem_file=None):
     with cd("/usr/ports/www/lightttpd"):
         sudo("make install")
     sudo('''echo 'lighttpd_enable="YES"' >> /etc/rc.conf''')
+    sudo('touch /var/log/lighttpd.error.log')
+    sudo('chown www:www /var/log/lighttpd.error.log')
+    sudo('touch /var/log/lighttpd.access.log')
+    sudo('chown www:www /var/log/lighttpd.access.log')
+    sudo('mkdir /var/run/lighttpd/')
+    sudo('chown www:www /var/run/lighttpd')
 
     # Configure lighty
+    sudo("mkdir /usr/local/etc/lighttpd/")
     upload_template(path.join(local_resource_dir, 'lighttpd.conf'),
-        '/usr/local/etc/lighttpd.conf',
+        '/usr/local/etc/lighttpd/lighttpd.conf',
         context=dict(
             hostname=hostname,
             httpd_ip=host_ip),
