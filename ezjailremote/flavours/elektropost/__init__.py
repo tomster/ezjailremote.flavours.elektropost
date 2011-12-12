@@ -130,6 +130,15 @@ def setup(hostname, host_ip=None, pem_file=None):
     with cd("/usr/ports/mail/squirrelmail"):
         sudo("make install")
 
+    # Configure squirrelmail
+    upload_template(path.join(local_resource_dir, 'config.php'),
+        '/usr/local/www/squirrelmail/config/config.php',
+        context=dict(
+            hostname=hostname,
+            httpd_ip=host_ip),
+        backup=False,
+        use_sudo=True)
+
     # Install qmailadmin / ezmlm-idx
     with cd("/usr/ports/mail/qmailadmin"):
         sudo('make install WITH_SPAM_DETECTION=TRUE SPAM_COMMAND="| /usr/local/bin/spamc -f | /usr/local/bin/maildrop" CGIBINDIR=www/squirrelmail/cgi-bin CGIBINSUBDIR= WEBDATADIR=www/squirrelmail WEBDATASUBDIR=qmailadmin')
