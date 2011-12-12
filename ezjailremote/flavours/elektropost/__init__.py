@@ -123,6 +123,10 @@ def setup(hostname, host_ip=None, pem_file=None):
     with cd("/usr/ports/mail/squirrelmail"):
         sudo("make install")
 
+    # Install qmailadmin / ezmlm-idx
+    with cd("/usr/ports/mail/qmailadmin"):
+        sudo('make install WITH_SPAM_DETECTION=TRUE SPAM_COMMAND="| /usr/local/bin/spamc -f | /usr/local/bin/maildrop" CGIBINDIR=www/squirrelmail/cgi-bin CGIBINSUBDIR= WEBDATADIR=www/squirrelmail WEBDATASUBDIR=qmailadmin')
+
     # Install qmailadmin plugin for squirrelmail
     with cd("/usr/ports/mail/squirrelmail-qmailadmin_login-plugin"):
         sudo("make install")
