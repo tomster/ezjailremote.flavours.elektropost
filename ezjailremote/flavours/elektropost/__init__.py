@@ -154,6 +154,13 @@ def setup(hostname, host_ip=None, pem_file=None):
     # Install the maildrop spam sort magic
     sudo("mv %s /usr/local/etc/maildroprc" % path.join(remote_patches_dir, 'maildroprc'))
 
+    # Install spamassassin
+    with cd("/usr/ports/mail/p5-Mail-SpamAssassin"):
+        sudo("make install")
+    sudo('mkdir -p /usr/local/etc/mail/spamassassin')
+    sudo("echo '-d 192.168.0.2' > /usr/local/etc/mail/spamassassin/spamc.conf")
+    # TODO: answer YES when prompted whether to download new rules
+
 
 def create_self_signed_cert(hostname, pem_file):
     """ based on http://skippylovesmalorie.wordpress.com/2010/02/12/how-to-generate-a-self-signed-certificate-using-pyopenssl/
