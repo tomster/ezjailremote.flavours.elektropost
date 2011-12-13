@@ -9,6 +9,22 @@ from ezjailremote.utils import is_ip
 
 
 @task
+def host_setup():
+    """ Create additional loopback interface so that spamassasin can have its
+    own IP to connect to (127.0.0.X is not available inside jails). """
+    # create the interface and configure it:
+    sudo('ifconfig lo1 create')
+    sudo('ifconfig lo1 inet 192.168.0.2 netmask 0xfffffffe alias')
+    sudo('ifconfig lo1 inet 192.168.0.3 netmask 0xffffffff alias')
+    sudo('ifconfig lo1 inet 192.168.0.4 netmask 0xffffffff alias')
+    sudo('ifconfig lo1 inet 192.168.0.5 netmask 0xffffffff alias')
+    sudo('ifconfig lo1 inet 192.168.0.6 netmask 0xffffffff alias')
+    # make it permanent:
+    sudo('echo cloned_interfaces="lo1" >> /etc/rc.conf')
+    sudo('echo ipv4_addrs_lo1="192.168.0.2-6/31" >> /etc/rc.conf')
+
+
+@task
 def setup(hostname, host_ip=None, pem_file=None):
     """ Sets up a fully functional mail server according to the elektropost
         instructions at http://erdgeist.org/arts/software/elektropost/
