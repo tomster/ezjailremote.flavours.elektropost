@@ -112,7 +112,7 @@ def setup(hostname, host_ip=None, pem_file=None):
         use_sudo=True)
 
     # Install lighty
-    with cd("/usr/ports/www/lightttpd"):
+    with cd("/usr/ports/www/lighttpd"):
         sudo("make install")
     sudo('''echo 'lighttpd_enable="YES"' >> /etc/rc.conf''')
     sudo('touch /var/log/lighttpd.error.log')
